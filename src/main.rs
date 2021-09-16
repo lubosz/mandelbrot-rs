@@ -10,7 +10,7 @@ use image::{Rgb, ImageBuffer};
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
 
-fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f32>, Vec<f32>>) {
+fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64>>) {
 
   for (x, y, pixel) in img.enumerate_pixels() {
     texture_canvas.set_draw_color(Color::RGB((pixel[0] * 255.0) as u8,
@@ -22,14 +22,14 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f32>, Vec<f32
   }
 }
 
-fn generate_image () -> ImageBuffer<Rgb<f32>, Vec<f32>> {
-  let mut img = ImageBuffer::<Rgb<f32>, Vec<f32>>::new(WIDTH, HEIGHT);
+fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
+  let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(WIDTH, HEIGHT);
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
-    let x_percent = x as f32 / WIDTH as f32;
-    let y_percent = y as f32 / HEIGHT as f32;
+    let x_percent = x as f64 / WIDTH as f64;
+    let y_percent = y as f64 / HEIGHT as f64;
 
-    *pixel = Rgb::<f32>([x_percent, y_percent, 0.0]);
+    *pixel = Rgb::<f64>([x_percent, y_percent, 0.0]);
   }
 
   img
