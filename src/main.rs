@@ -5,12 +5,12 @@ use std::time::Duration;
 use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
-use image::{Rgba, RgbaImage};
+use image::{Rgb, RgbImage};
 
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
 
-fn draw(texture_canvas: &mut Canvas<Window>, img: &RgbaImage) {
+fn draw(texture_canvas: &mut Canvas<Window>, img: &RgbImage) {
 
   for (x, y, pixel) in img.enumerate_pixels() {
     texture_canvas.set_draw_color(Color::RGB(pixel[0] as u8, pixel[1] as u8, pixel[2] as u8));
@@ -20,8 +20,8 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &RgbaImage) {
   }
 }
 
-fn generate_image () -> RgbaImage {
-  let mut img = RgbaImage::new(WIDTH, HEIGHT);
+fn generate_image () -> RgbImage {
+  let mut img = RgbImage::new(WIDTH, HEIGHT);
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let x_percent = x as f32 / WIDTH as f32;
@@ -31,7 +31,7 @@ fn generate_image () -> RgbaImage {
     let y_color = y_percent * 255 as f32;
     let y_color_int = y_color as u8;
 
-    *pixel = Rgba([x_color_int, y_color_int, 0, 1]);
+    *pixel = Rgb([x_color_int, y_color_int, 0]);
   }
 
   img
