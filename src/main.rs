@@ -19,30 +19,33 @@ pub fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window
+        .into_canvas()
+        .target_texture()
+        .present_vsync()
+        .build()
+        .map_err(|e| e.to_string())?;
 
     let texture_creator = canvas.texture_creator();
 
     let mut texture = texture_creator
-        .create_texture_target(None, WIDTH, HEIGHT).map_err(|e| e.to_string())?;
+        .create_texture_target(None, WIDTH, HEIGHT)
+        .map_err(|e| e.to_string())?;
 
     canvas.with_texture_canvas(&mut texture, |texture_canvas| {
-      texture_canvas.set_draw_color(Color::RGB(255, 0, 0));
-      texture_canvas.clear();
       for x in 0..WIDTH {
+        let x_percent = x as f32 / WIDTH as f32;
+        let x_color = x_percent * 255 as f32;
+        let x_color_int = x_color as u8;
         for y in 0..HEIGHT {
-            if (x + y) % 4 == 0 {
-                texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
-                texture_canvas
-                    .draw_point(Point::new(x as i32, y as i32))
-                    .expect("could not draw point");
-            }
-            if (x + y * 2) % 9 == 0 {
-                texture_canvas.set_draw_color(Color::RGB(200, 200, 0));
-                texture_canvas
-                    .draw_point(Point::new(x as i32, y as i32))
-                    .expect("could not draw point");
-            }
+            let y_percent = y as f32 / HEIGHT as f32;
+            let y_color = y_percent * 255 as f32;
+            let y_color_int = y_color as u8;
+
+            texture_canvas.set_draw_color(Color::RGB(x_color_int, y_color_int, 0));
+            texture_canvas
+                .draw_point(Point::new(x as i32, y as i32))
+                .expect("could not draw point");
         }
     }
 
