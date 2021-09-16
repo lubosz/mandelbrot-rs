@@ -1,9 +1,12 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-// use sdl2::pixels::Color;
-use sdl2::image::{InitFlag, LoadTexture};
+use sdl2::pixels::Color;
+use sdl2::image::{InitFlag};
 use std::time::Duration;
-use std::path::Path;
+use sdl2::rect::{Point};
+
+pub const WIDTH: u32 = 800;
+pub const HEIGHT: u32 = 600;
 
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -12,7 +15,7 @@ pub fn main() -> Result<(), String> {
 
 
     let window = video_subsystem
-        .window("Mandelbrot", 800, 600)
+        .window("Mandelbrot", WIDTH, HEIGHT)
         .position_centered()
         .opengl()
         .build()
@@ -20,10 +23,32 @@ pub fn main() -> Result<(), String> {
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
-    //canvas.set_draw_color(Color::RGB(255, 0, 0));
-    //canvas.clear();
     let texture_creator = canvas.texture_creator();
-    let texture = texture_creator.load_texture(Path::new("/home/bmonkey/Pictures/chat.jpg"))?;
+
+    let mut texture = texture_creator
+        .create_texture_target(None, WIDTH, HEIGHT).map_err(|e| e.to_string())?;
+
+    canvas.with_texture_canvas(&mut texture, |texture_canvas| {
+      texture_canvas.set_draw_color(Color::RGB(255, 0, 0));
+      texture_canvas.clear();
+      for x in 0..WIDTH {
+        for y in 0..HEIGHT {
+            if (x + y) % 4 == 0 {
+                texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
+                texture_canvas
+                    .draw_point(Point::new(x as i32, y as i32))
+                    .expect("could not draw point");
+            }
+            if (x + y * 2) % 9 == 0 {
+                texture_canvas.set_draw_color(Color::RGB(200, 200, 0));
+                texture_canvas
+                    .draw_point(Point::new(x as i32, y as i32))
+                    .expect("could not draw point");
+            }
+        }
+    }
+
+    }).map_err(|e| e.to_string())?;
 
     canvas.copy(&texture, None, None)?;
 
@@ -41,11 +66,7 @@ pub fn main() -> Result<(), String> {
                 _ => {}
             }
         }
-
-        //canvas.clear();
-        //canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
-        // The rest of the game loop goes here...
     }
 
     Ok(())
