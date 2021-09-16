@@ -5,26 +5,36 @@ use std::time::Duration;
 use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use image::{Rgba, RgbaImage};
 
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
 
-fn draw(texture_canvas: &mut Canvas<Window>) {
-  for x in 0..WIDTH {
+fn draw(texture_canvas: &mut Canvas<Window>, img: &RgbaImage) {
+
+  for (x, y, pixel) in img.enumerate_pixels() {
+    texture_canvas.set_draw_color(Color::RGB(pixel[0] as u8, pixel[1] as u8, pixel[2] as u8));
+    texture_canvas
+        .draw_point(Point::new(x as i32, y as i32))
+        .expect("could not draw point");
+  }
+}
+
+fn generate_image () -> RgbaImage {
+  let mut img = RgbaImage::new(WIDTH, HEIGHT);
+
+  for (x, y, pixel) in img.enumerate_pixels_mut() {
     let x_percent = x as f32 / WIDTH as f32;
     let x_color = x_percent * 255 as f32;
     let x_color_int = x_color as u8;
-    for y in 0..HEIGHT {
-        let y_percent = y as f32 / HEIGHT as f32;
-        let y_color = y_percent * 255 as f32;
-        let y_color_int = y_color as u8;
+    let y_percent = y as f32 / HEIGHT as f32;
+    let y_color = y_percent * 255 as f32;
+    let y_color_int = y_color as u8;
 
-        texture_canvas.set_draw_color(Color::RGB(x_color_int, y_color_int, 0));
-        texture_canvas
-            .draw_point(Point::new(x as i32, y as i32))
-            .expect("could not draw point");
-    }
+    *pixel = Rgba([x_color_int, y_color_int, 0, 1]);
   }
+
+  img
 }
 
 pub fn main() -> Result<(), String> {
@@ -55,7 +65,11 @@ pub fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    canvas.with_texture_canvas(&mut texture, draw).map_err(|e| e.to_string())?;
+    let img = generate_image();
+
+    canvas.with_texture_canvas(&mut texture, | draw_canvs | {
+      draw(draw_canvs, &img);
+    }).map_err(|e| e.to_string())?;
     canvas.copy(&texture, None, None)?;
     canvas.present();
 
