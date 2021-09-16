@@ -1,9 +1,8 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use sdl2::image::{InitFlag};
 use std::time::Duration;
-use sdl2::rect::{Point};
+use sdl2::rect::Point;
 
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
@@ -11,7 +10,6 @@ pub const HEIGHT: u32 = 600;
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
-    let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?;
 
 
     let window = video_subsystem
