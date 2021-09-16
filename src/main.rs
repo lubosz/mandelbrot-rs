@@ -5,12 +5,12 @@ use std::time::Duration;
 use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
-use image::{Rgb, RgbImage};
+use image::{Rgb, ImageBuffer};
 
 pub const WIDTH: u32 = 800;
 pub const HEIGHT: u32 = 600;
 
-fn draw(texture_canvas: &mut Canvas<Window>, img: &RgbImage) {
+fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<u16>, Vec<u16>>) {
 
   for (x, y, pixel) in img.enumerate_pixels() {
     texture_canvas.set_draw_color(Color::RGB(pixel[0] as u8, pixel[1] as u8, pixel[2] as u8));
@@ -20,18 +20,18 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &RgbImage) {
   }
 }
 
-fn generate_image () -> RgbImage {
-  let mut img = RgbImage::new(WIDTH, HEIGHT);
+fn generate_image () -> ImageBuffer<Rgb<u16>, Vec<u16>> {
+  let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(WIDTH, HEIGHT);
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let x_percent = x as f32 / WIDTH as f32;
     let x_color = x_percent * 255 as f32;
-    let x_color_int = x_color as u8;
+    let x_color_int = x_color as u16;
     let y_percent = y as f32 / HEIGHT as f32;
     let y_color = y_percent * 255 as f32;
-    let y_color_int = y_color as u8;
+    let y_color_int = y_color as u16;
 
-    *pixel = Rgb([x_color_int, y_color_int, 0]);
+    *pixel = Rgb::<u16>([x_color_int, y_color_int, 0]);
   }
 
   img
