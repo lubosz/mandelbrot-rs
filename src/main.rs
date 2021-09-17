@@ -1,14 +1,14 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use std::time::Duration;
+use std::{f64::consts::PI, time::Duration};
 use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
 
-pub const WIDTH: u32 = 800;
-pub const HEIGHT: u32 = 600;
+pub const WIDTH: u32 = 1000;
+pub const HEIGHT: u32 = 1000;
 
 fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64>>) {
 
@@ -40,6 +40,7 @@ fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
 
     let mut iteration = 0;
     let max_iteration = 1000;
+    let min_iteration = 250;
 
     let mut xres = 0.0;
     let mut yres = 0.0;
@@ -51,9 +52,78 @@ fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
       iteration = iteration + 1;
     }
 
-    let color = iteration as f64 / max_iteration as f64;
+    let color = (iteration - min_iteration) as f64 / (max_iteration - min_iteration) as f64;
 
-    *pixel = Rgb::<f64>([color, color, color]);
+    let r = color * PI / 2.0;
+    let g = color * PI;
+    let b = color * PI / 2.0;
+
+/*
+if (IterationsPerPixel == MaxIterations) {
+  (R,G,B) = (0, 0, 0);  /* In the set. Assign black. */
+} else if (IterationsPerPixel < 64) {
+  (R,G,B) = (IterationsPerPixel * 2, 0, 0);    /* 0x0000 to 0x007E */
+} else if (IterationsPerPixel < 128) {
+  (R,G,B) = ((((IterationsPerPixel - 64) * 128) / 126) + 128, 0, 0);    /* 0x0080 to 0x00C0 */
+} else if (IterationsPerPixel < 256) {
+  (R,G,B) = ((((IterationsPerPixel - 128) * 62) / 127) + 193, 0, 0);    /* 0x00C1 to 0x00FF */
+} else if (IterationsPerPixel < 512) {
+  (R,G,B) = (255, (((IterationsPerPixel - 256) * 62) / 255) + 1, 0);    /* 0x01FF to 0x3FFF */
+} else if (IterationsPerPixel < 1024) {
+  (R,G,B) = (255, (((IterationsPerPixel - 512) * 63) / 511) + 64, 0);   /* 0x40FF to 0x7FFF */
+} else if (IterationsPerPixel < 2048) {
+  (R,G,B) = (255, (((IterationsPerPixel - 1024) * 63) / 1023) + 128, 0);   /* 0x80FF to 0xBFFF */
+} else if (IterationsPerPixel < 4096) {
+  (R,G,B) = (255, (((IterationsPerPixel - 2048) * 63) / 2047) + 192, 0);   /* 0xC0FF to 0xFFFF */
+} else {
+  (R, G, b) = (255, 255, 0);
+}
+*/
+
+/*
+  (R,G,B) = (IterationsPerPixel * 2
+  (((IterationsPerPixel - 64) * 128) / 126) + 128
+  (((IterationsPerPixel - 128) * 62) / 127) + 193
+  (((IterationsPerPixel - 256) * 62) / 255) + 1
+  (((IterationsPerPixel - 512) * 63) / 511) + 64
+  (((IterationsPerPixel - 1024) * 63) / 1023) + 128
+  (((IterationsPerPixel - 2048) * 63) / 2047) + 192
+*/
+
+if iteration == max_iteration {
+  *pixel = Rgb::<f64>([0.0, 0.0, 0.0]);  /* In the set. Assign black. */
+} else if iteration < max_iteration / 64 {
+  let r = color * 2.0;
+  *pixel = Rgb::<f64>([r, 0.0, 0.0]);    /* 0x0000 to 0x007E */
+} else if iteration < max_iteration / 32 {
+  //let r = (((color - 0.125) * 0.25) / 0.5) + 0.5;
+  let r = (((iteration - max_iteration/64) as f64 * 128.0/256.0) / max_iteration as f64 /32.0) + 128.0/256.0;
+    *pixel = Rgb::<f64>([r, 0.0, 0.0]);    /* 0x0080 to 0x00C0 */
+  } else if iteration < max_iteration / 16 {
+    //let r = (((color - 0.25) * 0.125) / 0.25) + 1.0;
+    let r = (((iteration - max_iteration/32) as f64 * 628.0/2568.0) / max_iteration as f64 /32.0) + 193.0/256.0;
+    *pixel = Rgb::<f64>([r, 0.0, 0.0]);    /* 0x00C1 to 0x00FF */
+  } else if iteration < max_iteration / 8 {
+    //let g = ((color - 1.0) * 0.125) + 1.0;
+    let g = (((iteration - max_iteration/16) as f64 * 628.0/2568.0) / max_iteration as f64 /16.0) + 1.0/256.0;
+    *pixel = Rgb::<f64>([1.0, g, 0.0]);    /* 0x01FF to 0x3FFF */
+  } else if iteration < max_iteration / 4 {
+    //let g = (((color - 2.0) * 0.125) / 2.0) + 0.125;
+    let g = (((iteration - max_iteration/8) as f64 * 638.0/2568.0) / max_iteration as f64 /8.0) + 64.0/256.0;
+    *pixel = Rgb::<f64>([1.0, g, 0.0]);   /* 0x40FF to 0x7FFF */
+  } else if iteration < max_iteration / 2 {
+    //let g = (((color - 4.0) * 0.125) / 4.0) + 0.25;
+    let g = (((iteration - max_iteration/4) as f64 * 638.0/2568.0) / max_iteration as f64 /4.0) + 128.0/256.0;
+    *pixel = Rgb::<f64>([1.0, g, 0.0]);   /* 0x80FF to 0xBFFF */
+  } else if iteration < max_iteration {
+    //let g = (((color - 5.0) * 0.125) / 8.0) + 0.5;
+    let g = (((iteration - max_iteration/2) as f64 * 638.0/2568.0) / max_iteration as f64 /2.0) + 192.0/256.0;
+    *pixel = Rgb::<f64>([1.0, g, 0.0]);   /* 0xC0FF to 0xFFFF */
+  } else {
+    *pixel = Rgb::<f64>([1.0, 1.0, 0.0]);
+  }
+
+    //*pixel = Rgb::<f64>([r.sin(), g.sin(), b.sin()]);
   }
 
   img
