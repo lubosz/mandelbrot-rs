@@ -7,8 +7,8 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
 
-pub const WIDTH: u32 = 1000;
-pub const HEIGHT: u32 = 1000;
+pub const WIDTH: u32 = 1920;
+pub const HEIGHT: u32 = 1080;
 
 fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64>>) {
 
@@ -22,20 +22,19 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64
   }
 }
 
-fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
-  let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(WIDTH, HEIGHT);
+fn generate_image (w: u32, h: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
+  let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
   let y_from: f64 = -2.0;
   let y_to: f64 = 0.47;
   let y_range = y_from.abs() + y_to.abs();
-  let x_from: f64 = -1.12;
-  let x_to: f64 = 1.12;
-  let x_range = x_from.abs() + x_to.abs();
+  let x_range = y_range * w as f64 / h as f64;
+  let x_from: f64 = -x_range/2.0;
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
-    let x_percent = x as f64 / WIDTH as f64;
+    let x_percent = x as f64 / w as f64;
     let x0 = x_percent * x_range + x_from;
-    let y_percent = y as f64 / HEIGHT as f64;
+    let y_percent = y as f64 / h as f64;
     let y0 = y_percent * y_range + y_from;
 
     let mut iteration = 0;
@@ -112,7 +111,7 @@ pub fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    let img = generate_image();
+    let img = generate_image(WIDTH, HEIGHT);
 
     canvas.with_texture_canvas(&mut texture, | draw_canvs | {
       draw(draw_canvs, &img);
