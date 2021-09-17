@@ -53,6 +53,20 @@ fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
   }
 }
 
+fn iterate(max_iteration: u32, x0: f64, y0: f64) -> u32 {
+  let mut iteration = 0;
+  let mut x = 0.0;
+  let mut y = 0.0;
+
+  while x*x + y*y <= 2.0*2.0 && iteration < max_iteration {
+    let ytemp = y*y - x*x + y0;
+    x = 2.0 * x*y + x0;
+    y = ytemp;
+    iteration += 1;
+  }
+  iteration
+}
+
 fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
@@ -68,16 +82,7 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
     let y_percent = y as f64 / h as f64;
     let y0 = y_percent * y_range + y_from;
 
-    let mut iteration = 0;
-    let mut xres = 0.0;
-    let mut yres = 0.0;
-
-    while xres*xres + yres * yres <= 2.0*2.0 && iteration < max_iteration {
-      let ytemp = yres*yres - xres*xres + y0;
-      xres = 2.0*xres*yres + x0;
-      yres = ytemp;
-      iteration += 1;
-    }
+    let iteration = iterate(max_iteration, x0, y0);
 
     *pixel = map_color(iteration, max_iteration);
   }
