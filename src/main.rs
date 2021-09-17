@@ -1,11 +1,11 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use std::time::Duration;
 use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
+use std::time::{Duration, Instant};
 
 pub const WIDTH: u32 = 1920;
 pub const HEIGHT: u32 = 1080;
@@ -22,7 +22,7 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64
   }
 }
 
-fn generate_image (w: u32, h: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
+fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
   let y_from: f64 = -2.0;
@@ -38,8 +38,6 @@ fn generate_image (w: u32, h: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
     let y0 = y_percent * y_range + y_from;
 
     let mut iteration = 0;
-    let max_iteration = 1000;
-
     let mut xres = 0.0;
     let mut yres = 0.0;
 
@@ -111,7 +109,7 @@ pub fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    let img = generate_image(WIDTH, HEIGHT);
+    let img = generate_image(WIDTH, HEIGHT, 1000);
 
     canvas.with_texture_canvas(&mut texture, | draw_canvs | {
       draw(draw_canvs, &img);
@@ -136,4 +134,13 @@ pub fn main() -> Result<(), String> {
     Ok(())
 }
 
+fn benchmark(w: u32, h: u32, max_iteration: u32) {
+  let now = Instant::now();
+  generate_image(w, h, max_iteration);
+  println!("Ran benchmark in {}ms", now.elapsed().as_millis());
+}
 
+#[test]
+fn benchmark_1000() {
+  benchmark(1000, 1000, 1000);
+}
