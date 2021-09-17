@@ -80,15 +80,13 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
   println!("w_units {}", h_units);
 
   let y_from: f64 = -2.0;
-  let y_range = h_units;
-  let x_range = w_units;
-  let x_from: f64 = -x_range/2.0;
+  let x_from: f64 = -w_units/2.0;
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let x_percent = x as f64 / w as f64;
     let y_percent = y as f64 / h as f64;
-    let x0 = x_percent * x_range + x_from;
-    let y0 = y_percent * y_range + y_from;
+    let x0 = x_percent * w_units + x_from;
+    let y0 = y_percent * h_units + y_from;
 
     let iteration = iterate(max_iteration, x0, y0);
 
