@@ -39,7 +39,7 @@ fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
     let y0 = y_percent * y_range + y_from;
 
     let mut iteration = 0;
-    let max_iteration = 1000;
+    let max_iteration = 10000;
 
     let mut xres = 0.0;
     let mut yres = 0.0;
