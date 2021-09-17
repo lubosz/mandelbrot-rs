@@ -70,16 +70,24 @@ fn iterate(max_iteration: u32, x0: f64, y0: f64) -> u32 {
 fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
+  let center: (f64, f64) = (0.0, -0.765);
+
+  let pixels_per_unit: f64 = 437.246963563;
+
+  let w_units = w as f64 / pixels_per_unit;
+  let h_units = h as f64 / pixels_per_unit;
+  println!("w_units {}", w_units);
+  println!("w_units {}", h_units);
+
   let y_from: f64 = -2.0;
-  let y_to: f64 = 0.47;
-  let y_range = y_from.abs() + y_to.abs();
-  let x_range = y_range * w as f64 / h as f64;
+  let y_range = h_units;
+  let x_range = w_units;
   let x_from: f64 = -x_range/2.0;
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let x_percent = x as f64 / w as f64;
-    let x0 = x_percent * x_range + x_from;
     let y_percent = y as f64 / h as f64;
+    let x0 = x_percent * x_range + x_from;
     let y0 = y_percent * y_range + y_from;
 
     let iteration = iterate(max_iteration, x0, y0);
