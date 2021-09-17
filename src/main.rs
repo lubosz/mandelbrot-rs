@@ -25,12 +25,12 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64
 fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(WIDTH, HEIGHT);
 
-  let x_from: f64 = -2.0;
-  let x_to: f64 = 0.47;
-  let x_range = x_from.abs() + x_to.abs();
-  let y_from: f64 = -1.12;
-  let y_to: f64 = 1.12;
+  let y_from: f64 = -2.0;
+  let y_to: f64 = 0.47;
   let y_range = y_from.abs() + y_to.abs();
+  let x_from: f64 = -1.12;
+  let x_to: f64 = 1.12;
+  let x_range = x_from.abs() + x_to.abs();
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let x_percent = x as f64 / WIDTH as f64;
@@ -39,16 +39,16 @@ fn generate_image () -> ImageBuffer<Rgb<f64>, Vec<f64>> {
     let y0 = y_percent * y_range + y_from;
 
     let mut iteration = 0;
-    let max_iteration = 10000;
+    let max_iteration = 1000;
 
     let mut xres = 0.0;
     let mut yres = 0.0;
 
     while xres*xres + yres * yres <= 2.0*2.0 && iteration < max_iteration {
-      let xtemp = xres*xres - yres*yres + x0;
-      yres = 2.0*xres*yres + y0;
-      xres = xtemp;
-      iteration = iteration + 1;
+      let ytemp = yres*yres - xres*xres + y0;
+      xres = 2.0*xres*yres + x0;
+      yres = ytemp;
+      iteration += 1;
     }
 
     let color = iteration as f64 / max_iteration as f64;
