@@ -5,6 +5,7 @@ use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
+use vecmath::{Vector2, vec2_scale, vec2_cast};
 use std::time::{Duration, Instant};
 
 pub const WIDTH: u32 = 1920;
@@ -67,25 +68,25 @@ fn iterate(max_iteration: u32, x0: f64, y0: f64) -> u32 {
   iteration
 }
 
-struct Position {
-  center: (f64, f64),
+struct Config {
+  center: Vector2::<f64>,
   density: f64
 }
 
 fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
-  let pos: Position = Position {center: (0.0, -0.765), density: 437.246963563};
+  let config: Config = Config {center: [0.0, -0.765], density: 437.246963563};
 
-  let w_units = w as f64 / pos.density;
-  let h_units = h as f64 / pos.density;
+  let size_screen: Vector2::<f64> = [w as f64, h as f64];
+  let size_units = vec2_scale(size_screen, 1.0/config.density);
 
-  let x_from: f64 = pos.center.0 - w_units / 2.0;
-  let y_from: f64 = pos.center.1 - h_units / 2.0;
+  let x_from: f64 = config.center[0] - size_units[0] / 2.0;
+  let y_from: f64 = config.center[1] - size_units[1] / 2.0;
 
   for (x_screen, y_screen, pixel) in img.enumerate_pixels_mut() {
-    let x = x_screen as f64 / pos.density + x_from;
-    let y = y_screen as f64 / pos.density + y_from;
+    let x = x_screen as f64 / config.density + x_from;
+    let y = y_screen as f64 / config.density + y_from;
 
     let iteration = iterate(max_iteration, x, y);
 
