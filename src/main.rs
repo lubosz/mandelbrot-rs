@@ -29,7 +29,7 @@ fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64
 fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
   let color = iteration as f64 / max_iteration as f64;
 
-  if iteration == max_iteration {
+  if iteration >= max_iteration {
     Rgb::<f64>([0.0, 0.0, 0.0])  /* In the set. Assign black. */
   } else if iteration < max_iteration / 64 {
     let r = color * 32.0;
@@ -68,19 +68,6 @@ fn iterate_naive(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
     x = 2.0 * x*y + pos[0];
     y = ytemp;
     i += 1;
-  }
-
-  if i < max_iteration {
-
-    // sqrt of inner term removed using log simplification rules.
-    let log_zn = f64::log10(x*x + y*y) / 2.0;
-    let nu = f64::log10(log_zn / f64::log10(2.0)) / f64::log10(2.0);
-    // Rearranging the potential function.
-    // Dividing log_zn by log(2) instead of log(N = 1<<8)
-    // because we want the entire palette to range from the
-    // center to radius 2, NOT our bailout radius.
-    let fi = i as f64 + 1.0 - nu;
-    i = fi as u32
   }
 
   i
@@ -271,4 +258,17 @@ fn test_fmod() {
   let foo = 2.46453;
   let bar = foo % 1.0;
   println!("bar {}", bar);
+}
+
+#[test]
+fn test_zero_zero() {
+  let pos: Vector2::<f64> = [0.0, 0.0];
+  let (iteration, rest) = iterate_naive_interpolate(1000, pos);
+
+  let color1 = map_color(iteration, 1000);
+  let color2 = map_color(iteration + 1, 1000);
+
+  println!("Iteration {} Rest {}", iteration, rest);
+  println!("Color 1 {} {} {}", color1[0], color1[1], color1[2]);
+  println!("Color 2 {} {} {}", color2[0], color2[1], color2[2]);
 }
