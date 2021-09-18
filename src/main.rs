@@ -56,37 +56,47 @@ fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
 }
 
 fn iterate(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
-  let mut iteration = 0;
+  let mut i = 0;
   let mut x = 0.0;
   let mut y = 0.0;
 
-  //let c = Complex::new(pos[0], pos[1]);
-
-  while x*x + y*y <= 2.0*2.0 && iteration < max_iteration {
+  while x*x + y*y <= 2.0*2.0 && i < max_iteration {
     let ytemp = y*y - x*x + pos[1];
     x = 2.0 * x*y + pos[0];
     y = ytemp;
-    iteration += 1;
+    i += 1;
   }
-  iteration
+  i
 }
 
 fn iterate_opt(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
-  let mut iteration = 0;
+  let mut i = 0;
   let mut x2 = 0.0;
   let mut y2 = 0.0;
 
   let mut x = 0.0;
   let mut y = 0.0;
 
-  while x2 + y2 <= 4.0 && iteration < max_iteration {
+  while x2 + y2 <= 4.0 && i < max_iteration {
     x = 2.0 * y * x + pos[0];
     y = y2 - x2 + pos[1];
     x2 = x * x;
     y2 = y * y;
-    iteration += 1;
+    i += 1;
   }
-  iteration
+  i
+}
+
+fn iterate_complex(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
+  let mut i = 0;
+  let c: Complex<f64> = Complex::new(pos[1], pos[0]);
+  let mut z: Complex<f64> = Complex::new(0.0, 0.0);
+
+  while z.norm_sqr() <= 2.0*2.0 && i < max_iteration {
+    z = z.powu(2) + c;
+    i += 1;
+  }
+  i
 }
 
 struct Config {
@@ -115,7 +125,7 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let pos = image_to_world_position(&config, &origin, x, y);
-    let iteration = iterate_opt(max_iteration, pos);
+    let iteration = iterate_complex(max_iteration, pos);
     *pixel = map_color(iteration, max_iteration);
   }
 
