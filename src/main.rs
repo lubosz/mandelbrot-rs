@@ -9,8 +9,10 @@ use image::{Rgb, ImageBuffer};
 use vecmath::{Vector2, vec2_add, vec2_scale, vec2_sub};
 use std::time::{Duration, Instant};
 
-pub const WIDTH: u32 = 1920;
-pub const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
+
+type Iteration = fn(u32, Vector2::<f64>) -> u32;
 
 fn draw(texture_canvas: &mut Canvas<Window>, img: &ImageBuffer<Rgb<f64>, Vec<f64>>) {
 
@@ -55,7 +57,8 @@ fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
   }
 }
 
-fn iterate(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
+
+fn iterate_naive(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
   let mut i = 0;
   let mut x = 0.0;
   let mut y = 0.0;
@@ -66,10 +69,53 @@ fn iterate(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
     y = ytemp;
     i += 1;
   }
+
+  if i < max_iteration {
+
+    // sqrt of inner term removed using log simplification rules.
+    let log_zn = f64::log10(x*x + y*y) / 2.0;
+    let nu = f64::log10(log_zn / f64::log10(2.0)) / f64::log10(2.0);
+    // Rearranging the potential function.
+    // Dividing log_zn by log(2) instead of log(N = 1<<8)
+    // because we want the entire palette to range from the
+    // center to radius 2, NOT our bailout radius.
+    let fi = i as f64 + 1.0 - nu;
+    i = fi as u32
+  }
+
   i
 }
 
-fn iterate_opt(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
+fn iterate_naive_interpolate(max_iteration: u32, pos: Vector2::<f64>) -> (u32, f64) {
+  let mut i = 0;
+  let mut x = 0.0;
+  let mut y = 0.0;
+
+  while x*x + y*y <= 2.0*2.0 && i < max_iteration {
+    let ytemp = y*y - x*x + pos[1];
+    x = 2.0 * x*y + pos[0];
+    y = ytemp;
+    i += 1;
+  }
+
+  let mut fi :f64 = 0.0;
+  if i < max_iteration {
+
+    // sqrt of inner term removed using log simplification rules.
+    let log_zn = f64::log10(x*x + y*y) / 2.0;
+    let nu = f64::log10(log_zn / f64::log10(2.0)) / f64::log10(2.0);
+    // Rearranging the potential function.
+    // Dividing log_zn by log(2) instead of log(N = 1<<8)
+    // because we want the entire palette to range from the
+    // center to radius 2, NOT our bailout radius.
+    fi = i as f64 + 1.0 - nu;
+    i = fi.floor() as u32;
+  }
+
+  (i, fi % 1.0)
+}
+
+fn iterate_optimized(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
   let mut i = 0;
   let mut x2 = 0.0;
   let mut y2 = 0.0;
@@ -117,7 +163,16 @@ fn image_to_world_position(config: &Config, origin: &Vector2::<f64>, x: u32, y: 
   vec2_add(pos_screen, *origin)
 }
 
-fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
+fn interpolate(color1: Rgb<f64>, color2: Rgb<f64>, factor: f64) -> Rgb<f64> {
+  let factor_inv = 1.0 - factor;
+  let r = color1[0] * factor + color2[0] * factor_inv;
+  let g = color1[1] * factor + color2[1] * factor_inv;
+  let b = color1[2] * factor + color2[2] * factor_inv;
+
+  Rgb::<f64>([r, g, b])
+}
+
+fn generate_image (w: u32, h: u32, max_iteration: u32, it: Iteration) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
   let config: Config = Config {center: [0.0, -0.765], density: 437.246963563};
@@ -125,8 +180,13 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let pos = image_to_world_position(&config, &origin, x, y);
-    let iteration = iterate_complex(max_iteration, pos);
-    *pixel = map_color(iteration, max_iteration);
+    //let mut iteration = it(max_iteration, pos);
+    let (iteration, rest) = iterate_naive_interpolate(max_iteration, pos);
+
+    let color1 = map_color(iteration, max_iteration);
+    let color2 = map_color(iteration + 1, max_iteration);
+
+    *pixel = interpolate(color1, color2, rest);
   }
 
   img
@@ -160,7 +220,7 @@ pub fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    let img = generate_image(WIDTH, HEIGHT, 1000);
+    let img = generate_image(WIDTH, HEIGHT, 1000, iterate_naive);
 
     canvas.with_texture_canvas(&mut texture, | draw_canvs | {
       draw(draw_canvs, &img);
@@ -185,13 +245,30 @@ pub fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn benchmark(w: u32, h: u32, max_iteration: u32) {
+fn benchmark(w: u32, h: u32, max_iteration: u32, it: Iteration) {
   let now = Instant::now();
-  generate_image(w, h, max_iteration);
+  generate_image(w, h, max_iteration, it);
   println!("Ran benchmark in {}ms", now.elapsed().as_millis());
 }
 
 #[test]
-fn benchmark_1000() {
-  benchmark(1000, 1000, 1000);
+fn benchmark_naive() {
+  benchmark(1000, 1000, 1000, iterate_naive);
+}
+
+#[test]
+fn benchmark_optimized() {
+  benchmark(1000, 1000, 1000, iterate_optimized);
+}
+
+#[test]
+fn benchmark_complex() {
+  benchmark(1000, 1000, 1000, iterate_complex);
+}
+
+#[test]
+fn test_fmod() {
+  let foo = 2.46453;
+  let bar = foo % 1.0;
+  println!("bar {}", bar);
 }
