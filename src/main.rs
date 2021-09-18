@@ -67,28 +67,27 @@ fn iterate(max_iteration: u32, x0: f64, y0: f64) -> u32 {
   iteration
 }
 
+struct Position {
+  center: (f64, f64),
+  density: f64
+}
+
 fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
-  let center: (f64, f64) = (0.0, -0.765);
+  let pos: Position = Position {center: (0.0, -0.765), density: 437.246963563};
 
-  let pixels_per_unit: f64 = 437.246963563;
+  let w_units = w as f64 / pos.density;
+  let h_units = h as f64 / pos.density;
 
-  let w_units = w as f64 / pixels_per_unit;
-  let h_units = h as f64 / pixels_per_unit;
-  println!("w_units {}", w_units);
-  println!("w_units {}", h_units);
+  let x_from: f64 = pos.center.0 - w_units / 2.0;
+  let y_from: f64 = pos.center.1 - h_units / 2.0;
 
-  let y_from: f64 = -2.0;
-  let x_from: f64 = -w_units/2.0;
+  for (x_screen, y_screen, pixel) in img.enumerate_pixels_mut() {
+    let x = x_screen as f64 / pos.density + x_from;
+    let y = y_screen as f64 / pos.density + y_from;
 
-  for (x, y, pixel) in img.enumerate_pixels_mut() {
-    let x_percent = x as f64 / w as f64;
-    let y_percent = y as f64 / h as f64;
-    let x0 = x_percent * w_units + x_from;
-    let y0 = y_percent * h_units + y_from;
-
-    let iteration = iterate(max_iteration, x0, y0);
+    let iteration = iterate(max_iteration, x, y);
 
     *pixel = map_color(iteration, max_iteration);
   }
