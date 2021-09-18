@@ -5,7 +5,7 @@ use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
-use vecmath::{Vector2, vec2_cast, vec2_scale, vec2_sub};
+use vecmath::{Vector2, vec2_add, vec2_scale, vec2_sub};
 use std::time::{Duration, Instant};
 
 pub const WIDTH: u32 = 1920;
@@ -82,12 +82,11 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
   let half_size_units = vec2_scale(size_units, 0.5);
   let origin: Vector2::<f64> = vec2_sub(config.center, half_size_units);
 
-  for (x_screen, y_screen, pixel) in img.enumerate_pixels_mut() {
-    let x = x_screen as f64 / config.density + origin[0];
-    let y = y_screen as f64 / config.density + origin[1];
-
-    let iteration = iterate(max_iteration, x, y);
-
+  for (x, y, pixel) in img.enumerate_pixels_mut() {
+    let pos_screen_pixels: Vector2::<f64> = [x as f64, y as f64];
+    let pos_screen = vec2_scale(pos_screen_pixels, 1.0/config.density);
+    let pos = vec2_add(pos_screen, origin);
+    let iteration = iterate(max_iteration, pos[0], pos[1]);
     *pixel = map_color(iteration, max_iteration);
   }
 
