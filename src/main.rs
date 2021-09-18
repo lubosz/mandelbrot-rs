@@ -5,7 +5,7 @@ use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
-use vecmath::{Vector2, vec2_scale, vec2_cast};
+use vecmath::{Vector2, vec2_cast, vec2_scale, vec2_sub};
 use std::time::{Duration, Instant};
 
 pub const WIDTH: u32 = 1920;
@@ -77,16 +77,14 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
   let config: Config = Config {center: [0.0, -0.765], density: 437.246963563};
-
   let size_screen: Vector2::<f64> = [w as f64, h as f64];
   let size_units = vec2_scale(size_screen, 1.0/config.density);
-
-  let x_from: f64 = config.center[0] - size_units[0] / 2.0;
-  let y_from: f64 = config.center[1] - size_units[1] / 2.0;
+  let half_size_units = vec2_scale(size_units, 0.5);
+  let origin: Vector2::<f64> = vec2_sub(config.center, half_size_units);
 
   for (x_screen, y_screen, pixel) in img.enumerate_pixels_mut() {
-    let x = x_screen as f64 / config.density + x_from;
-    let y = y_screen as f64 / config.density + y_from;
+    let x = x_screen as f64 / config.density + origin[0];
+    let y = y_screen as f64 / config.density + origin[1];
 
     let iteration = iterate(max_iteration, x, y);
 
