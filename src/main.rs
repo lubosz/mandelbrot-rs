@@ -1,3 +1,4 @@
+use num_complex::Complex;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -59,10 +60,30 @@ fn iterate(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
   let mut x = 0.0;
   let mut y = 0.0;
 
+  //let c = Complex::new(pos[0], pos[1]);
+
   while x*x + y*y <= 2.0*2.0 && iteration < max_iteration {
     let ytemp = y*y - x*x + pos[1];
     x = 2.0 * x*y + pos[0];
     y = ytemp;
+    iteration += 1;
+  }
+  iteration
+}
+
+fn iterate_opt(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
+  let mut iteration = 0;
+  let mut x2 = 0.0;
+  let mut y2 = 0.0;
+
+  let mut x = 0.0;
+  let mut y = 0.0;
+
+  while x2 + y2 <= 4.0 && iteration < max_iteration {
+    x = 2.0 * y * x + pos[0];
+    y = y2 - x2 + pos[1];
+    x2 = x * x;
+    y2 = y * y;
     iteration += 1;
   }
   iteration
@@ -94,7 +115,7 @@ fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, 
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
     let pos = image_to_world_position(&config, &origin, x, y);
-    let iteration = iterate(max_iteration, pos);
+    let iteration = iterate_opt(max_iteration, pos);
     *pixel = map_color(iteration, max_iteration);
   }
 
