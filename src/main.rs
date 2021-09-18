@@ -54,14 +54,14 @@ fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
   }
 }
 
-fn iterate(max_iteration: u32, x0: f64, y0: f64) -> u32 {
+fn iterate(max_iteration: u32, pos: Vector2::<f64>) -> u32 {
   let mut iteration = 0;
   let mut x = 0.0;
   let mut y = 0.0;
 
   while x*x + y*y <= 2.0*2.0 && iteration < max_iteration {
-    let ytemp = y*y - x*x + y0;
-    x = 2.0 * x*y + x0;
+    let ytemp = y*y - x*x + pos[1];
+    x = 2.0 * x*y + pos[0];
     y = ytemp;
     iteration += 1;
   }
@@ -73,20 +73,28 @@ struct Config {
   density: f64
 }
 
+fn origin_from_screen_size(config: &Config, w: u32, h: u32) -> Vector2::<f64> {
+  let size_screen: Vector2::<f64> = [w as f64, h as f64];
+  let size_units = vec2_scale(size_screen, 1.0/config.density);
+  let half_size_units = vec2_scale(size_units, 0.5);
+  vec2_sub(config.center, half_size_units)
+}
+
+fn image_to_world_position(config: &Config, origin: &Vector2::<f64>, x: u32, y: u32) -> Vector2::<f64> {
+  let pos_screen_pixels: Vector2::<f64> = [x as f64, y as f64];
+  let pos_screen = vec2_scale(pos_screen_pixels, 1.0/config.density);
+  vec2_add(pos_screen, *origin)
+}
+
 fn generate_image (w: u32, h: u32, max_iteration: u32) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
   let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
 
   let config: Config = Config {center: [0.0, -0.765], density: 437.246963563};
-  let size_screen: Vector2::<f64> = [w as f64, h as f64];
-  let size_units = vec2_scale(size_screen, 1.0/config.density);
-  let half_size_units = vec2_scale(size_units, 0.5);
-  let origin: Vector2::<f64> = vec2_sub(config.center, half_size_units);
+  let origin: Vector2::<f64> = origin_from_screen_size(&config, w, h);
 
   for (x, y, pixel) in img.enumerate_pixels_mut() {
-    let pos_screen_pixels: Vector2::<f64> = [x as f64, y as f64];
-    let pos_screen = vec2_scale(pos_screen_pixels, 1.0/config.density);
-    let pos = vec2_add(pos_screen, origin);
-    let iteration = iterate(max_iteration, pos[0], pos[1]);
+    let pos = image_to_world_position(&config, &origin, x, y);
+    let iteration = iterate(max_iteration, pos);
     *pixel = map_color(iteration, max_iteration);
   }
 
