@@ -1,6 +1,6 @@
 #[macro_use] extern crate itertools;
 use num_complex::Complex;
-use sdl2::event::Event;
+use sdl2::{Sdl, event::Event};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
@@ -237,6 +237,24 @@ fn generate_image_parallel(w: u32, h: u32, max_iteration: u32, it: Iteration) ->
   ImageBuffer::from_raw(w, h, pixels.into_inner()).expect("Buffer not big enough??")
 }
 
+fn render_loop(context: Sdl) -> Result<(), String> {
+  let mut event_pump = context.event_pump()?;
+  'running: loop {
+    for event in event_pump.poll_iter() {
+        match event {
+            Event::Quit { .. }
+            | Event::KeyDown {
+                keycode: Some(Keycode::Escape),
+                ..
+            } => break 'running,
+            _ => {}
+        }
+    }
+    ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
+  }
+  Ok(())
+}
+
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -262,9 +280,6 @@ pub fn main() -> Result<(), String> {
         .create_texture_target(None, WIDTH, HEIGHT)
         .map_err(|e| e.to_string())?;
 
-
-    let mut event_pump = sdl_context.event_pump()?;
-
     let img = generate_image_parallel(WIDTH, HEIGHT, 1000, iterate_naive);
 
     canvas.with_texture_canvas(&mut texture, | draw_canvs | {
@@ -273,19 +288,7 @@ pub fn main() -> Result<(), String> {
     canvas.copy(&texture, None, None)?;
     canvas.present();
 
-    'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
-                _ => {}
-            }
-        }
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
-    }
+    render_loop(sdl_context)?;
 
     Ok(())
 }
