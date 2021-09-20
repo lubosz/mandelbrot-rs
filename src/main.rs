@@ -240,10 +240,9 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
   Ok(())
 }
 
-fn render_config(config: Config) -> Result<(), String> {
+fn init_sdl() -> Result<(Sdl, Canvas<Window>), String> {
   let sdl_context = sdl2::init()?;
   let video_subsystem = sdl_context.video()?;
-
 
   let window = video_subsystem
       .window("Mandelbrot", WIDTH, HEIGHT)
@@ -252,18 +251,18 @@ fn render_config(config: Config) -> Result<(), String> {
       .build()
       .map_err(|e| e.to_string())?;
 
-  let mut canvas = window
+  let canvas = window
       .into_canvas()
       .target_texture()
       .present_vsync()
       .build()
       .map_err(|e| e.to_string())?;
 
-  let texture_creator = canvas.texture_creator();
+  Ok((sdl_context, canvas))
+}
 
-  let mut texture = texture_creator
-      .create_texture_streaming(PixelFormatEnum::RGB24, WIDTH, HEIGHT)
-      .map_err(|e| e.to_string())?;
+fn render_config(config: Config) -> Result<(), String> {
+  let (sdl_context, mut canvas) = init_sdl().unwrap();
 
   let p = ParallelPixelBuffer::new(WIDTH, HEIGHT);
   let pixels = Arc::new(p);
@@ -272,6 +271,11 @@ fn render_config(config: Config) -> Result<(), String> {
   thread::spawn(move || {
     generate_image_parallel(&config, &f, WIDTH, HEIGHT, 10000);
   });
+
+  let texture_creator = canvas.texture_creator();
+  let mut texture: Texture = texture_creator
+      .create_texture_streaming(PixelFormatEnum::RGB24, WIDTH, HEIGHT)
+      .map_err(|e| e.to_string())?;
   render_loop(sdl_context, &mut canvas, &mut texture, &pixels)?;
 
   Ok(())
