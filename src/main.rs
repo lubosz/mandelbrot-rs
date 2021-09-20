@@ -2,8 +2,8 @@
 use num_complex::Complex;
 use sdl2::{Sdl, event::Event};
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Point;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::rect::{Point, Rect};
 use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
@@ -22,7 +22,7 @@ type Iteration = fn(u32, Vector2::<f64>) -> u32;
 
 struct ParallelPixelBuffer {
   width: u32,
-  contents: UnsafeCell<Vec<f64>>,
+  contents: UnsafeCell<Vec<u8>>,
 }
 
 unsafe impl Sync for ParallelPixelBuffer {}
@@ -31,36 +31,42 @@ impl ParallelPixelBuffer {
     pub fn new(width: u32, height: u32) -> ParallelPixelBuffer {
         ParallelPixelBuffer {
             width: width,
-            contents: UnsafeCell::new(vec![0.0; (width * height * 3) as usize]),
+            contents: UnsafeCell::new(vec![0; (width * height * 3) as usize]),
         }
     }
 
-    pub fn put_pixel(&self, l: u32, t: u32, x: f64, y: f64, z: f64) {
+    pub fn put_pixel(&self, l: u32, t: u32, r: u8, g: u8, b: u8) {
         unsafe {
             let contents = &mut *self.contents.get();
             let base = (((t * self.width) + l) * 3) as usize;
-            *contents.get_unchecked_mut(base) = x;
-            *contents.get_unchecked_mut(base + 1) = y;
-            *contents.get_unchecked_mut(base + 2) = z;
+            *contents.get_unchecked_mut(base) = r;
+            *contents.get_unchecked_mut(base + 1) = g;
+            *contents.get_unchecked_mut(base + 2) = b;
         }
     }
 
-    pub fn into_inner(self) -> Vec<f64> {
+    pub fn into_inner(self) -> Vec<u8> {
         self.contents.into_inner()
+    }
+
+    pub fn get_contents(&self) -> &Vec<u8> {
+      unsafe {
+        &*self.contents.get()
+      }
     }
 
     pub fn get_color(&self, x: u32, y: u32) -> Color {
       unsafe {
         let contents = &*self.contents.get();
         let base = (((y * self.width) + x) * 3) as usize;
-        let r: u8 = (*contents.get_unchecked(base) * 255.0) as u8;
-        let g: u8 = (*contents.get_unchecked(base + 1) * 255.0) as u8;
-        let b: u8 = (*contents.get_unchecked(base + 2) * 255.0) as u8;
+        let r: u8 = *contents.get_unchecked(base);
+        let g: u8 = *contents.get_unchecked(base + 1);
+        let b: u8 = *contents.get_unchecked(base + 2);
         Color::RGB(r, g, b)
       }
     }
 
-    pub fn get_image(self) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
+    pub fn get_image(self) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
       ImageBuffer::from_raw(WIDTH, HEIGHT, self.contents.into_inner()).expect("Buffer not big enough??")
     }
 }
@@ -266,7 +272,7 @@ fn generate_image_parallel(pixels: &ParallelPixelBuffer, w: u32, h: u32, max_ite
     let color2 = map_color(iteration + 1, max_iteration);
 
     let color = interpolate(color1, color2, rest);
-    pixels.put_pixel(x, y, color[0], color[1], color[2]);
+    pixels.put_pixel(x, y, (color[0] * 255.0) as u8, (color[1] * 255.0) as u8, (color[2] * 255.0) as u8);
   });
 }
 
@@ -291,9 +297,14 @@ fn render_loop(context: Sdl, canvas: &mut Canvas<Window>, texture: &mut Texture,
 
 fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &ParallelPixelBuffer) -> Result<(), String> {
 
+  /*
   canvas.with_texture_canvas(texture, | draw_canvs | {
-    draw(draw_canvs, &img);
+    draw(draw_canvs,&img);
   }).map_err(|e| e.to_string())?;
+  */
+
+  let rect: Rect = Rect::new(0,0, WIDTH, HEIGHT);
+  texture.update(rect, img.get_contents(), (3*WIDTH) as usize).map_err(|e| e.to_string())?;
 
   canvas.copy(&texture, None, None)?;
   canvas.present();
@@ -324,7 +335,7 @@ pub fn main() -> Result<(), String> {
     let texture_creator = canvas.texture_creator();
 
     let mut texture = texture_creator
-        .create_texture_target(None, WIDTH, HEIGHT)
+        .create_texture_streaming(PixelFormatEnum::RGB24, WIDTH, HEIGHT)
         .map_err(|e| e.to_string())?;
 
     //let (tx, rx) = mpsc::channel();
