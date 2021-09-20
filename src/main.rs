@@ -284,17 +284,20 @@ fn render_loop(context: Sdl, canvas: &mut Canvas<Window>, texture: &mut Texture,
         }
     }
     draw_texture(canvas, texture, pixels)?;
-    ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
+    //::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
   }
   Ok(())
 }
 
 fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &ParallelPixelBuffer) -> Result<(), String> {
+
   canvas.with_texture_canvas(texture, | draw_canvs | {
     draw(draw_canvs, &img);
   }).map_err(|e| e.to_string())?;
+
   canvas.copy(&texture, None, None)?;
   canvas.present();
+  println!("Updating image.");
 
   Ok(())
 }
