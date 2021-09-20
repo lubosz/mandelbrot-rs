@@ -2,23 +2,21 @@
 use num_complex::Complex;
 use sdl2::{Sdl, event::Event};
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::{Point, Rect};
+use sdl2::pixels::{PixelFormatEnum};
+use sdl2::rect::{Rect};
 use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
-use image::{Rgb, ImageBuffer};
+use image::Rgb;
 use vecmath::{Vector2, vec2_add, vec2_scale, vec2_sub};
-use std::sync::{Arc, mpsc};
+use std::sync::{Arc};
 use std::thread;
-use std::{cell::UnsafeCell, time::{Duration, Instant}};
+use std::{cell::UnsafeCell, time::Instant};
 use rayon::prelude::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
-
-type Iteration = fn(u32, Vector2::<f64>) -> u32;
 
 struct ParallelPixelBuffer {
   width: u32,
@@ -45,56 +43,13 @@ impl ParallelPixelBuffer {
         }
     }
 
-    pub fn into_inner(self) -> Vec<u8> {
-        self.contents.into_inner()
-    }
-
     pub fn get_contents(&self) -> &Vec<u8> {
       unsafe {
         &*self.contents.get()
       }
     }
-
-    pub fn get_color(&self, x: u32, y: u32) -> Color {
-      unsafe {
-        let contents = &*self.contents.get();
-        let base = (((y * self.width) + x) * 3) as usize;
-        let r: u8 = *contents.get_unchecked(base);
-        let g: u8 = *contents.get_unchecked(base + 1);
-        let b: u8 = *contents.get_unchecked(base + 2);
-        Color::RGB(r, g, b)
-      }
-    }
-
-    pub fn get_image(self) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-      ImageBuffer::from_raw(WIDTH, HEIGHT, self.contents.into_inner()).expect("Buffer not big enough??")
-    }
 }
 
-fn draw(texture_canvas: &mut Canvas<Window>, pixels: &ParallelPixelBuffer) {
-    for x in 0..(WIDTH) {
-      for y in 0..(HEIGHT) {
-        let color = pixels.get_color(x, y);
-        texture_canvas.set_draw_color(color);
-        texture_canvas
-        .draw_point(Point::new(x as i32, y as i32))
-        .expect("could not draw point");
-      }
-    }
-
-    /*
-    let image: ImageBuffer<Rgb<f64>, Vec<f64>> = &pixels.get_image();
-
-    for (x, y, pixel) in image.enumerate_pixels() {
-      texture_canvas.set_draw_color(Color::RGB((pixel[0] * 255.0) as u8,
-      (pixel[1] * 255.0) as u8,
-      (pixel[2] * 255.0) as u8));
-      texture_canvas
-      .draw_point(Point::new(x as i32, y as i32))
-      .expect("could not draw point");
-    }
-    */
-}
 
 fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
   let color = iteration as f64 / max_iteration as f64;
@@ -229,27 +184,6 @@ fn interpolate(color1: Rgb<f64>, color2: Rgb<f64>, factor: f64) -> Rgb<f64> {
   Rgb::<f64>([r, g, b])
 }
 
-fn generate_image (w: u32, h: u32, max_iteration: u32, it: Iteration) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
-  let mut img = ImageBuffer::<Rgb<f64>, Vec<f64>>::new(w, h);
-
-  let config: Config = Config {center: [0.360240443437614363236125244449545308482607807958585750488375814740195346059218100311752936722773426396233731729724987737320035372683285317664532401218521579554288661726564324134702299962817029213329980895208036363104546639698106204384566555001322985619004717862781192694046362748742863016467354574422779443226982622356594130430232458472420816652623492974891730419252651127672782407292315574480207005828774566475024380960675386215814315654794021855269375824443853463117354448779647099224311848192893972572398662626725254769950976527431277402440752868498588785436705371093442460696090720654908973712759963732914849861213100695402602927267843779747314419332179148608587129105289166676461292845685734536033692577618496925170576714796693411776794742904333484665301628662532967079174729170714156810530598764525260869731233845987202037712637770582084286587072766838497865108477149114659838883818795374195150936369987302574377608649625020864292915913378927790344097552591919409137354459097560040374880346637533711271919419723135538377394364882968994646845930838049998854075817859391340445151448381853615103761584177161812057928, -0.6413130610648031748603750151793020665794949522823052595561775430644485741727536902556370230689681162370740565537072149790106973211105273740851993394803287437606238596262287731075999483940467161288840614581091294325709988992269165007394305732683208318834672366947550710920088501655704252385244481168836426277052232593412981472237968353661477793530336607247738951625817755401065045362273039788332245567345061665756708689359294516668271440525273653083717877701237756144214394870245598590883973716531691124286669552803640414068523325276808909040317617092683826521501539932397262012011082098721944643118695001226048977430038509470101715555439047884752058334804891389685530946112621573416582482926221804767466258346014417934356149837352092608891639072745930639364693513216719114523328990690069588676087923656657656023794484324797546024248328156586471662631008741349069961493817600100133439721557969263221185095951241491408756751582471307537382827924073746760884081704887902040036056611401378785952452105099242499241003208013460878442953408648178692353788153787229940221611731034405203519945313911627314900851851072122990492499999999999999999991],
-    density: 43700.246963563};
-  let origin: Vector2::<f64> = origin_from_screen_size(&config, w, h);
-
-  for (x, y, pixel) in img.enumerate_pixels_mut() {
-    let pos = image_to_world_position(&config, &origin, x, y);
-    //let mut iteration = it(max_iteration, pos);
-    let (iteration, rest) = iterate_naive_interpolate(max_iteration, pos);
-
-    let color1 = map_color(iteration, max_iteration);
-    let color2 = map_color(iteration + 1, max_iteration);
-
-    *pixel = interpolate(color1, color2, rest);
-  }
-
-  img
-}
-
 fn generate_image_parallel(pixels: &ParallelPixelBuffer, w: u32, h: u32, max_iteration: u32) {
 
   let mut coords: Vec<_> = iproduct!(0..w, 0..h).collect();
@@ -259,13 +193,11 @@ fn generate_image_parallel(pixels: &ParallelPixelBuffer, w: u32, h: u32, max_ite
 
 
   let config: Config = Config {center: [0.360240443437614363236125244449545308482607807958585750488375814740195346059218100311752936722773426396233731729724987737320035372683285317664532401218521579554288661726564324134702299962817029213329980895208036363104546639698106204384566555001322985619004717862781192694046362748742863016467354574422779443226982622356594130430232458472420816652623492974891730419252651127672782407292315574480207005828774566475024380960675386215814315654794021855269375824443853463117354448779647099224311848192893972572398662626725254769950976527431277402440752868498588785436705371093442460696090720654908973712759963732914849861213100695402602927267843779747314419332179148608587129105289166676461292845685734536033692577618496925170576714796693411776794742904333484665301628662532967079174729170714156810530598764525260869731233845987202037712637770582084286587072766838497865108477149114659838883818795374195150936369987302574377608649625020864292915913378927790344097552591919409137354459097560040374880346637533711271919419723135538377394364882968994646845930838049998854075817859391340445151448381853615103761584177161812057928, -0.6413130610648031748603750151793020665794949522823052595561775430644485741727536902556370230689681162370740565537072149790106973211105273740851993394803287437606238596262287731075999483940467161288840614581091294325709988992269165007394305732683208318834672366947550710920088501655704252385244481168836426277052232593412981472237968353661477793530336607247738951625817755401065045362273039788332245567345061665756708689359294516668271440525273653083717877701237756144214394870245598590883973716531691124286669552803640414068523325276808909040317617092683826521501539932397262012011082098721944643118695001226048977430038509470101715555439047884752058334804891389685530946112621573416582482926221804767466258346014417934356149837352092608891639072745930639364693513216719114523328990690069588676087923656657656023794484324797546024248328156586471662631008741349069961493817600100133439721557969263221185095951241491408756751582471307537382827924073746760884081704887902040036056611401378785952452105099242499241003208013460878442953408648178692353788153787229940221611731034405203519945313911627314900851851072122990492499999999999999999991],
-    density: 43700.246963563};
+    density: 437000.246963563};
   let origin: Vector2::<f64> = origin_from_screen_size(&config, w, h);
 
-  //for (x, y, pixel) in img.enumerate_pixels_mut() {
   coords.par_iter().for_each(|&(x, y)| {
     let pos = image_to_world_position(&config, &origin, x, y);
-    //let mut iteration = it(max_iteration, pos);
     let (iteration, rest) = iterate_naive_interpolate(max_iteration, pos);
 
     let color1 = map_color(iteration, max_iteration);
@@ -290,19 +222,11 @@ fn render_loop(context: Sdl, canvas: &mut Canvas<Window>, texture: &mut Texture,
         }
     }
     draw_texture(canvas, texture, pixels)?;
-    //::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
   }
   Ok(())
 }
 
 fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &ParallelPixelBuffer) -> Result<(), String> {
-
-  /*
-  canvas.with_texture_canvas(texture, | draw_canvs | {
-    draw(draw_canvs,&img);
-  }).map_err(|e| e.to_string())?;
-  */
-
   let rect: Rect = Rect::new(0,0, WIDTH, HEIGHT);
   texture.update(rect, img.get_contents(), (3*WIDTH) as usize).map_err(|e| e.to_string())?;
 
@@ -338,15 +262,12 @@ pub fn main() -> Result<(), String> {
         .create_texture_streaming(PixelFormatEnum::RGB24, WIDTH, HEIGHT)
         .map_err(|e| e.to_string())?;
 
-    //let (tx, rx) = mpsc::channel();
-    //&[u8]
-
     let p = ParallelPixelBuffer::new(WIDTH, HEIGHT);
     let pixels = Arc::new(p);
     let f = pixels.clone();
 
     thread::spawn(move || {
-        generate_image_parallel(&f, WIDTH, HEIGHT, 10000);
+        generate_image_parallel(&f, WIDTH, HEIGHT, 100000);
     });
     render_loop(sdl_context, &mut canvas, &mut texture, &pixels)?;
 
@@ -354,39 +275,20 @@ pub fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn benchmark(w: u32, h: u32, max_iteration: u32, it: Iteration) {
-  let now = Instant::now();
-  generate_image(w, h, max_iteration, it);
-  println!("Ran benchmark in {}ms", now.elapsed().as_millis());
-}
 
-fn benchmark_parrelel(w: u32, h: u32, max_iteration: u32, it: Iteration) {
+fn benchmark_parrelel(w: u32, h: u32, max_iteration: u32) {
   let now = Instant::now();
-  // generate_image_parallel(w, h, max_iteration);
+  let p = ParallelPixelBuffer::new(w, h);
+  generate_image_parallel(&p, w, h, max_iteration);
   println!("Ran benchmark in {}ms", now.elapsed().as_millis());
 }
 
 
 #[test]
-fn benchmark_naive() {
-  benchmark(1000, 1000, 1000, iterate_naive);
+fn benchmark() {
+  benchmark_parrelel(1000, 1000, 1000);
 }
 
-#[test]
-fn benchmark_parrelel_naive() {
-  benchmark_parrelel(1000, 1000, 1000, iterate_naive);
-}
-
-
-#[test]
-fn benchmark_optimized() {
-  benchmark(1000, 1000, 1000, iterate_optimized);
-}
-
-#[test]
-fn benchmark_complex() {
-  benchmark(1000, 1000, 1000, iterate_complex);
-}
 
 #[test]
 fn test_fmod() {
