@@ -45,8 +45,15 @@ impl ParallelPixelBuffer {
         self.contents.into_inner()
     }
 
-    pub fn contents(self) -> UnsafeCell<Vec<f64>> {
-      self.contents
+    pub fn get_color(&self, x: u32, y: u32) -> Color {
+      unsafe {
+        let contents = &*self.contents.get();
+        let base = (((y * self.width) + x) * 3) as usize;
+        let r: u8 = (*contents.get_unchecked(base) * 255.0) as u8;
+        let g: u8 = (*contents.get_unchecked(base + 1) * 255.0) as u8;
+        let b: u8 = (*contents.get_unchecked(base + 2) * 255.0) as u8;
+        Color::RGB(r, g, b)
+      }
     }
 
     pub fn get_image(self) -> ImageBuffer<Rgb<f64>, Vec<f64>> {
@@ -55,8 +62,17 @@ impl ParallelPixelBuffer {
 }
 
 fn draw(texture_canvas: &mut Canvas<Window>, pixels: &ParallelPixelBuffer) {
+    for x in 0..(WIDTH) {
+      for y in 0..(HEIGHT) {
+        let color = pixels.get_color(x, y);
+        texture_canvas.set_draw_color(color);
+        texture_canvas
+        .draw_point(Point::new(x as i32, y as i32))
+        .expect("could not draw point");
+      }
+    }
 
-
+    /*
     let image: ImageBuffer<Rgb<f64>, Vec<f64>> = &pixels.get_image();
 
     for (x, y, pixel) in image.enumerate_pixels() {
@@ -67,6 +83,7 @@ fn draw(texture_canvas: &mut Canvas<Window>, pixels: &ParallelPixelBuffer) {
       .draw_point(Point::new(x as i32, y as i32))
       .expect("could not draw point");
     }
+    */
 }
 
 fn map_color(iteration: u32, max_iteration: u32) -> Rgb::<f64> {
