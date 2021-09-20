@@ -59,17 +59,19 @@ pub fn main() -> Result<(), String> {
         }
     }
 
-    let hue = start_time.elapsed().as_millis() as f32 % 360.0;
+    let elapsed_ms = start_time.elapsed().as_millis() as f32;
+    let hue =  elapsed_ms / 10.0 % 360.0;
 
     let hsv = Hsv::new(hue, 1.0, 1.0);
     let rgb = Srgb::from_color(hsv);
 
-    for x in 0..(WIDTH) {
-      for y in 0..(HEIGHT) {
-        let color = Color::RGB((rgb.red * 255.0) as u8,
+    let color = Color::RGB((rgb.red * 255.0) as u8,
         (rgb.green * 255.0) as u8,
         (rgb.blue * 255.0) as u8);
-        canvas.set_draw_color(color);
+    canvas.set_draw_color(color);
+
+    for x in 0..(WIDTH) {
+      for y in 0..(HEIGHT) {
         canvas.draw_point(Point::new(x as i32, y as i32))
         .expect("could not draw point");
       }
