@@ -235,7 +235,7 @@ fn generate_image_parallel(w: u32, h: u32, max_iteration: u32, it: Iteration) ->
   ImageBuffer::from_raw(w, h, pixels.into_inner()).expect("Buffer not big enough??")
 }
 
-fn render_loop(context: Sdl) -> Result<(), String> {
+fn render_loop(context: Sdl, canvas: &mut Canvas<Window>, texture: &mut Texture, img: &ImageBuffer<Rgb<f64>, Vec<f64>>) -> Result<(), String> {
   let mut event_pump = context.event_pump()?;
   'running: loop {
     for event in event_pump.poll_iter() {
@@ -248,12 +248,13 @@ fn render_loop(context: Sdl) -> Result<(), String> {
             _ => {}
         }
     }
+    draw_texture(canvas, texture, img)?;
     ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
   }
   Ok(())
 }
 
-fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: ImageBuffer<Rgb<f64>, Vec<f64>>) -> Result<(), String> {
+fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &ImageBuffer<Rgb<f64>, Vec<f64>>) -> Result<(), String> {
   canvas.with_texture_canvas(texture, | draw_canvs | {
     draw(draw_canvs, &img);
   }).map_err(|e| e.to_string())?;
@@ -290,9 +291,7 @@ pub fn main() -> Result<(), String> {
 
     let img = generate_image_parallel(WIDTH, HEIGHT, 1000, iterate_naive);
 
-    draw_texture(&mut canvas, &mut texture, img)?;
-
-    render_loop(sdl_context)?;
+    render_loop(sdl_context, &mut canvas, &mut texture, &img)?;
 
     Ok(())
 }
