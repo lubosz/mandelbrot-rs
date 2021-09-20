@@ -4,7 +4,7 @@ use sdl2::{Sdl, event::Event};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
-use sdl2::render::Canvas;
+use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
 use vecmath::{Vector2, vec2_add, vec2_scale, vec2_sub};
@@ -42,9 +42,7 @@ impl ParallelPixelBuffer {
     }
 
     pub fn into_inner(self) -> Vec<f64> {
-        unsafe {
-            self.contents.into_inner()
-        }
+        self.contents.into_inner()
     }
 }
 
@@ -255,6 +253,16 @@ fn render_loop(context: Sdl) -> Result<(), String> {
   Ok(())
 }
 
+fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: ImageBuffer<Rgb<f64>, Vec<f64>>) -> Result<(), String> {
+  canvas.with_texture_canvas(texture, | draw_canvs | {
+    draw(draw_canvs, &img);
+  }).map_err(|e| e.to_string())?;
+  canvas.copy(&texture, None, None)?;
+  canvas.present();
+
+  Ok(())
+}
+
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -282,11 +290,7 @@ pub fn main() -> Result<(), String> {
 
     let img = generate_image_parallel(WIDTH, HEIGHT, 1000, iterate_naive);
 
-    canvas.with_texture_canvas(&mut texture, | draw_canvs | {
-      draw(draw_canvs, &img);
-    }).map_err(|e| e.to_string())?;
-    canvas.copy(&texture, None, None)?;
-    canvas.present();
+    draw_texture(&mut canvas, &mut texture, img)?;
 
     render_loop(sdl_context)?;
 
