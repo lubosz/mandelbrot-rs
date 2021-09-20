@@ -297,7 +297,7 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
 
   canvas.copy(&texture, None, None)?;
   canvas.present();
-  println!("Updating image.");
+
 
   Ok(())
 }
@@ -328,6 +328,7 @@ pub fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     //let (tx, rx) = mpsc::channel();
+    //&[u8]
 
     let p = ParallelPixelBuffer::new(WIDTH, HEIGHT);
     let pixels = Arc::new(p);
