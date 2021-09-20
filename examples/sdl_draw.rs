@@ -1,14 +1,9 @@
 use std::time::Instant;
-
-use palette::rgb::Rgb;
-use sdl2::{Sdl, event::Event};
+use sdl2::{event::Event};
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Point;
-use sdl2::render::{Canvas, Texture};
-use sdl2::video::Window;
-use palette::{FromColor, Hsl, Hsv, Lab, LinSrgb, RgbHue, Srgb};
-//use image::{ImageBuffer, Pixel, Rgb};
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::rect::{Point, Rect};
+use palette::{FromColor, Hsv, Srgb};
 
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
@@ -37,13 +32,11 @@ pub fn main() -> Result<(), String> {
   let texture_creator = canvas.texture_creator();
 
   let mut texture = texture_creator
-      .create_texture_target(None, WIDTH, HEIGHT)
-      .map_err(|e| e.to_string())?;
+  .create_texture_streaming(PixelFormatEnum::RGB24, WIDTH, HEIGHT).map_err(|e| e.to_string())?;
 
+  let mut pixels: Vec<u8> = vec![0; (WIDTH * HEIGHT * 3) as usize];
 
-  //let mut pixel = Vec::<u8>::new();
-
-  //texture.update((), array, WIDTH * );
+  let rect: Rect = Rect::new(0,0, WIDTH, HEIGHT);
 
   let mut event_pump = sdl_context.event_pump()?;
   'running: loop {
@@ -65,19 +58,35 @@ pub fn main() -> Result<(), String> {
     let hsv = Hsv::new(hue, 1.0, 1.0);
     let rgb = Srgb::from_color(hsv);
 
-    let color = Color::RGB((rgb.red * 255.0) as u8,
-        (rgb.green * 255.0) as u8,
-        (rgb.blue * 255.0) as u8);
-    canvas.set_draw_color(color);
 
-    for x in 0..(WIDTH) {
-      for y in 0..(HEIGHT) {
-        canvas.draw_point(Point::new(x as i32, y as i32))
-        .expect("could not draw point");
+    if true {
+      for x in 0..(WIDTH) {
+        for y in 0..(HEIGHT) {
+          let base = (((y * WIDTH) + x) * 3) as usize;
+          pixels[base] = (rgb.red * 255.0) as u8;
+          pixels[base + 1] = (rgb.green * 255.0) as u8;
+          pixels[base + 2] = (rgb.blue * 255.0) as u8;
+        }
       }
+
+      texture.update(rect, &pixels, (3*WIDTH) as usize).map_err(|e| e.to_string())?;
+      canvas.copy(&texture, None, None)?;
+    } else {
+      let color = Color::RGB((rgb.red * 255.0) as u8,
+      (rgb.green * 255.0) as u8,
+      (rgb.blue * 255.0) as u8);
+      canvas.set_draw_color(color);
+
+      for x in 0..(WIDTH) {
+        for y in 0..(HEIGHT) {
+          canvas.draw_point(Point::new(x as i32, y as i32))
+          .expect("could not draw point");
+        }
+      }
+
     }
+
     canvas.present();
-    //::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     let frame_time_ms = frame_start_time.elapsed().as_millis();
     let fps = 1000.0 / frame_time_ms as f64;
     println!("Frame Time {}ms | {:.2} fps", frame_start_time.elapsed().as_millis(), fps);
