@@ -8,6 +8,8 @@ use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 use image::{Rgb, ImageBuffer};
 use vecmath::{Vector2, vec2_add, vec2_scale, vec2_sub};
+use std::sync::{Arc, mpsc};
+use std::thread;
 use std::{cell::UnsafeCell, time::{Duration, Instant}};
 use rayon::prelude::*;
 
@@ -315,10 +317,17 @@ pub fn main() -> Result<(), String> {
         .create_texture_target(None, WIDTH, HEIGHT)
         .map_err(|e| e.to_string())?;
 
-    let pixels = ParallelPixelBuffer::new(WIDTH, HEIGHT);
-    generate_image_parallel(&pixels, WIDTH, HEIGHT, 1000);
+    //let (tx, rx) = mpsc::channel();
 
+    let p = ParallelPixelBuffer::new(WIDTH, HEIGHT);
+    let pixels = Arc::new(p);
+    let f = pixels.clone();
+
+    thread::spawn(move || {
+        generate_image_parallel(&f, WIDTH, HEIGHT, 10000);
+    });
     render_loop(sdl_context, &mut canvas, &mut texture, &pixels)?;
+
 
     Ok(())
 }
