@@ -250,6 +250,7 @@ dependencies = [
  "imageproc",
  "itertools",
  "num-complex 0.4.0",
+ "rand",
  "rayon",
  "sdl2",
  "vecmath",
