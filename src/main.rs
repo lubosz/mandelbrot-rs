@@ -366,27 +366,16 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
 
   for iteration in img.get_iterations().into_iter() {
 
-    if iteration < &img.max_iterations {
+    if *iteration < img.max_iterations && *iteration != 0 {
 
-      let mut hue = 0.0;
-      match hue_cache.get(iteration) {
-        Some(foo) => {
-          hue = *foo;
-        },
+      let hue: f32 = match hue_cache.get(iteration) {
+        Some(h) => {*h},
         None => {
-          hue = img.get_hue_for_iter(*iteration, total);
+          let hue = img.get_hue_for_iter(*iteration, total);
           hue_cache.insert(*iteration, hue);
+          hue
         }
-      }
-
-      /*
-      if hue_cache.contains_key(&iteration) {
-        hue = *hue_cache.get(iteration).unwrap();
-      } else {
-        hue = img.get_hue_for_iter(*iteration, total);
-        hue_cache.insert(*iteration, hue);
-      }
-      */
+      };
 
       let hsv = Hsv::new(hue * 360.0, 1.0, 1.0);
       let rgb = Srgb::from_color(hsv);
@@ -462,13 +451,13 @@ pub fn main() -> Result<(), String> {
     iterations: 100000
   };
 
+  /*
   let config: Config = Config {
     center: [nice_center[1], nice_center[0]],
     density: 43700.246963563 * 10000000.0,
     iterations: 100000
   };
 
-  /*
   let config: Config = Config {
     center: [0.0, -0.765],
     density: 437.246963563,
