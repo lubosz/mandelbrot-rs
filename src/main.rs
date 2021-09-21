@@ -390,7 +390,7 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
             }
           };
 
-          hue * *r + hue2 * (1.0 - *r)
+          hue * (1.0 - *r) + hue2 * *r
          },
         _ => { hue }
         };
