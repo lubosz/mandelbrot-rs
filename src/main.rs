@@ -21,7 +21,8 @@ const HEIGHT: u32 = 1080;
 
 struct ParallelPixelBuffer {
   width: u32,
-  contents: UnsafeCell<Vec<u8>>,
+  iterations: UnsafeCell<Vec<u32>>,
+  rests: UnsafeCell<Vec<f32>>,
 }
 
 unsafe impl Sync for ParallelPixelBuffer {}
@@ -30,23 +31,30 @@ impl ParallelPixelBuffer {
     pub fn new(width: u32, height: u32) -> ParallelPixelBuffer {
         ParallelPixelBuffer {
             width: width,
-            contents: UnsafeCell::new(vec![0; (width * height * 3) as usize]),
+            iterations: UnsafeCell::new(vec![0; (width * height) as usize]),
+            rests: UnsafeCell::new(vec![0.0; (width * height) as usize]),
         }
     }
 
-    pub fn put_pixel(&self, l: u32, t: u32, r: u8, g: u8, b: u8) {
+    pub fn put_pixel(&self, l: u32, t: u32, it: u32, re: f32) {
         unsafe {
-            let contents = &mut *self.contents.get();
-            let base = (((t * self.width) + l) * 3) as usize;
-            *contents.get_unchecked_mut(base) = r;
-            *contents.get_unchecked_mut(base + 1) = g;
-            *contents.get_unchecked_mut(base + 2) = b;
+            let iterations = &mut *self.iterations.get();
+            let rests = &mut *self.rests.get();
+            let base = ((t * self.width) + l) as usize;
+            *iterations.get_unchecked_mut(base) = it;
+            *rests.get_unchecked_mut(base) = re;
         }
     }
 
-    pub fn get_contents(&self) -> &Vec<u8> {
+    pub fn get_iterations(&self) -> &Vec<u32> {
       unsafe {
-        &*self.contents.get()
+        &*self.iterations.get()
+      }
+    }
+
+    pub fn get_rests(&self) -> &Vec<f32> {
+      unsafe {
+        &*self.rests.get()
       }
     }
 }
@@ -262,7 +270,9 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
 
     //pixels.put_pixel(x, y, (color[0] * 255.0) as u8, (color[1] * 255.0) as u8, (color[2] * 255.0) as u8);
 
-    pixels.put_pixel(x, y, (rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8);
+    //pixels.put_pixel(x, y, (rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8);
+
+    pixels.put_pixel(x, y, iteration, 0.0);
 
     //pixels.put_pixel(x, y, color[0], color[1], color[2]);
   });
@@ -288,7 +298,33 @@ fn render_loop(context: Sdl, canvas: &mut Canvas<Window>, texture: &mut Texture,
 
 fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &ParallelPixelBuffer) -> Result<(), String> {
   let rect: Rect = Rect::new(0,0, WIDTH, HEIGHT);
-  texture.update(rect, img.get_contents(), (3*WIDTH) as usize).map_err(|e| e.to_string())?;
+
+  let mut colors = Vec::<u8>::new();
+
+  let bob_ross = vec![
+    Rgb::<u8>([0x00, 0x00, 0x00]), // Midnight black
+    Rgb::<u8>([0x02, 0x1e, 0x44]), // Prussian blue
+    Rgb::<u8>([0x0a, 0x34, 0x10]), // Sap green
+    Rgb::<u8>([0x0c, 0x00, 0x40]), // Phthalo blue
+    Rgb::<u8>([0x10, 0x2e, 0x3c]), // Phthalo green
+    Rgb::<u8>([0x22, 0x1b, 0x15]), // Van Dyke brown
+    Rgb::<u8>([0x4e, 0x15, 0x00]), // Alizarin crimson
+    Rgb::<u8>([0x5f, 0x2e, 0x1f]), // Dark Sienna
+    Rgb::<u8>([0xc7, 0x9b, 0x00]), // Yellow ochre
+    Rgb::<u8>([0xdb, 0x00, 0x00]), // Bright red
+    Rgb::<u8>([0xff, 0x3c, 0x00]), // Cadmium yellow
+    Rgb::<u8>([0xff, 0xb8, 0x00]), // Indian yellow
+    Rgb::<u8>([0xff, 0xff, 0xff]), // Titanium white
+  ];
+
+  for iteration in img.get_iterations().into_iter() {
+    let color = bob_ross.get((*iteration%13) as usize).unwrap();
+    colors.push(color[0]);
+    colors.push(color[1]);
+    colors.push(color[2]);
+  }
+
+  texture.update(rect, &colors, (3*WIDTH) as usize).map_err(|e| e.to_string())?;
 
   canvas.copy(&texture, None, None)?;
   canvas.present();
@@ -348,13 +384,13 @@ pub fn main() -> Result<(), String> {
     iterations: 100000
   };
 
+  /*
   let config: Config = Config {
     center: [nice_center[1], nice_center[0]],
     density: 43700.246963563 * 10000000.0,
     iterations: 100000
   };
 
-  /*
   let config: Config = Config {
     center: [0.0, -0.765],
     density: 437.246963563,
