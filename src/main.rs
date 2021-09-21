@@ -288,8 +288,8 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
     let color = map_color(iteration, config.iterations);
     */
 
-    let iteration = iterate_complex(config.iterations, pos);
-    //let (iteration, rest) = iterate_naive_interpolate(config.iterations, pos);
+    //let iteration = iterate_complex(config.iterations, pos);
+    let (iteration, rest) = iterate_naive_interpolate(config.iterations, pos);
 
     /*
     */
@@ -316,7 +316,7 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
 
     //pixels.put_pixel(x, y, (rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8);
 
-    pixels.put_pixel(x, y, iteration, 0.0);
+    pixels.put_pixel(x, y, iteration, rest as f32);
 
     //pixels.put_pixel(x, y, color[0], color[1], color[2]);
   });
@@ -364,20 +364,38 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
   let total = img.get_iter_total();
   let mut hue_cache: HashMap<u32,f32> = HashMap::<u32,f32>::new();
 
+  let mut i = 0;
   for iteration in img.get_iterations().into_iter() {
 
-    if *iteration < img.max_iterations && *iteration != 0 {
 
+    if *iteration < img.max_iterations && *iteration != 0 {
       let hue: f32 = match hue_cache.get(iteration) {
         Some(h) => {*h},
         None => {
-          let hue = img.get_hue_for_iter(*iteration, total);
-          hue_cache.insert(*iteration, hue);
-          hue
+          let h = img.get_hue_for_iter(*iteration, total);
+          hue_cache.insert(*iteration, h);
+          h
         }
       };
 
-      let hsv = Hsv::new(hue * 360.0, 1.0, 1.0);
+      let the_hue = match img.get_rests().get(i) {
+        Some(r) => {
+          let key = iteration+1;
+          let hue2: f32 = match hue_cache.get(&key) {
+            Some(h) => {*h},
+            None => {
+              let h = img.get_hue_for_iter(*iteration, total);
+              hue_cache.insert(*iteration, h);
+              h
+            }
+          };
+
+          hue * *r + hue2 * (1.0 - *r)
+         },
+        _ => { hue }
+        };
+
+      let hsv = Hsv::new(the_hue * 360.0, 1.0, 1.0);
       let rgb = Srgb::from_color(hsv);
 
       colors.push((rgb.red * 255.0) as u8);
@@ -390,6 +408,7 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
       colors.push(0);
       colors.push(0);
     }
+    i += 1;
   }
 
   texture.update(rect, &colors, (3*WIDTH) as usize).map_err(|e| e.to_string())?;
