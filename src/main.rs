@@ -167,8 +167,8 @@ fn iterate_naive_interpolate(max_iteration: u32, pos: Vector2::<f64>) -> (u32, f
   if i < max_iteration {
 
     // sqrt of inner term removed using log simplification rules.
-    let log_zn = f64::log10(x*x + y*y) / 2.0;
-    let nu = f64::log10(log_zn / f64::log10(2.0)) / f64::log10(2.0);
+    let log_zn = f64::ln(x*x + y*y) / 2.0;
+    let nu = f64::ln(log_zn / f64::ln(2.0)) / f64::ln(2.0);
     // Rearranging the potential function.
     // Dividing log_zn by log(2) instead of log(N = 1<<8)
     // because we want the entire palette to range from the
