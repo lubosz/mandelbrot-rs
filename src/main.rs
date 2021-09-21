@@ -24,7 +24,7 @@ struct ParallelPixelBuffer {
   width: u32,
   iter_map: UnsafeCell<HashMap<u32,u32>>,
   iterations: UnsafeCell<Vec<u32>>,
-  rests: UnsafeCell<Vec<f32>>,
+  rests: UnsafeCell<Vec<f64>>,
   max_iterations: u32
 }
 
@@ -41,7 +41,7 @@ impl ParallelPixelBuffer {
         }
     }
 
-    pub fn put_pixel(&self, l: u32, t: u32, it: u32, re: f32) {
+    pub fn put_pixel(&self, l: u32, t: u32, it: u32, re: f64) {
         unsafe {
             let iterations = &mut *self.iterations.get();
             let rests = &mut *self.rests.get();
@@ -84,19 +84,19 @@ impl ParallelPixelBuffer {
       total
     }
 
-    pub fn get_hue_for_iter(&self, it: u32, total: u32) -> f32 {
+    pub fn get_hue_for_iter(&self, it: u32, total: u32) -> f64 {
       let mut hue = 0.0;
 
       for (ito, count) in self.get_iter_map() {
         if ito <= &it {
-          hue += *count as f32 / total as f32;
+          hue += *count as f64 / total as f64;
         }
       }
 
       hue
     }
 
-    pub fn get_rests(&self) -> &Vec<f32> {
+    pub fn get_rests(&self) -> &Vec<f64> {
       unsafe {
         &*self.rests.get()
       }
@@ -316,7 +316,7 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
 
     //pixels.put_pixel(x, y, (rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8);
 
-    pixels.put_pixel(x, y, iteration, rest as f32);
+    pixels.put_pixel(x, y, iteration, rest);
 
     //pixels.put_pixel(x, y, color[0], color[1], color[2]);
   });
@@ -362,14 +362,14 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
   ];
 
   let total = img.get_iter_total();
-  let mut hue_cache: HashMap<u32,f32> = HashMap::<u32,f32>::new();
+  let mut hue_cache: HashMap<u32,f64> = HashMap::<u32,f64>::new();
 
   let mut i = 0;
   for iteration in img.get_iterations().into_iter() {
 
 
     if *iteration < img.max_iterations && *iteration != 0 {
-      let hue: f32 = match hue_cache.get(iteration) {
+      let hue: f64 = match hue_cache.get(iteration) {
         Some(h) => {*h},
         None => {
           let h = img.get_hue_for_iter(*iteration, total);
@@ -381,7 +381,7 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
       let the_hue = match img.get_rests().get(i) {
         Some(r) => {
           let key = iteration+1;
-          let hue2: f32 = match hue_cache.get(&key) {
+          let hue2: f64 = match hue_cache.get(&key) {
             Some(h) => {*h},
             None => {
               let h = img.get_hue_for_iter(*iteration, total);
@@ -470,13 +470,13 @@ pub fn main() -> Result<(), String> {
     iterations: 100000
   };
 
-  /*
   let config: Config = Config {
     center: [nice_center[1], nice_center[0]],
     density: 43700.246963563 * 10000000.0,
     iterations: 100000
   };
 
+  /*
   let config: Config = Config {
     center: [0.0, -0.765],
     density: 437.246963563,
