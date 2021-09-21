@@ -156,7 +156,7 @@ fn iterate_naive_interpolate(max_iteration: u32, pos: Vector2::<f64>) -> (u32, f
   let mut x = 0.0;
   let mut y = 0.0;
 
-  while x*x + y*y <= 2.0*2.0 && i < max_iteration {
+  while x*x + y*y <= 32.0 && i < max_iteration {
     let ytemp = y*y - x*x + pos[1];
     x = 2.0 * x*y + pos[0];
     y = ytemp;
@@ -395,7 +395,7 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
         _ => { hue }
         };
 
-      let hsv = Hsv::new(the_hue * 360.0, 1.0, 1.0);
+      let hsv = Hsv::new(the_hue * 180.0 + 180.0, 1.0, 1.0);
       let rgb = Srgb::from_color(hsv);
 
       colors.push((rgb.red * 255.0) as u8);
@@ -480,7 +480,7 @@ pub fn main() -> Result<(), String> {
   let config: Config = Config {
     center: [0.0, -0.765],
     density: 437.246963563,
-    iterations: 1000
+    iterations: 100000
   };
   */
 
