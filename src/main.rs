@@ -20,6 +20,8 @@ use palette::{FromColor, Hsv, Srgb};
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
+const ANIMATE: bool = false;
+
 struct ParallelPixelBuffer {
   width: u32,
   iter_map: UnsafeCell<HashMap<u32,u32>>,
@@ -156,7 +158,7 @@ fn iterate_naive_interpolate(max_iteration: u32, pos: Vector2::<f64>) -> (u32, f
   let mut x = 0.0;
   let mut y = 0.0;
 
-  while x*x + y*y <= 32.0 && i < max_iteration {
+  while x*x + y*y <= 4.0 && i < max_iteration {
     let ytemp = y*y - x*x + pos[1];
     x = 2.0 * x*y + pos[0];
     y = ytemp;
@@ -320,6 +322,16 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
 
     //pixels.put_pixel(x, y, color[0], color[1], color[2]);
   });
+
+  let config2: Config = Config {
+    center: config.center,
+    density: config.density + 100.0,
+    iterations: config.iterations
+  };
+
+  if ANIMATE {
+    generate_image_parallel(&config2, pixels, WIDTH, HEIGHT);
+  }
 }
 
 fn render_loop(context: Sdl, canvas: &mut Canvas<Window>, texture: &mut Texture, pixels: &ParallelPixelBuffer) -> Result<(), String> {
@@ -395,7 +407,7 @@ fn draw_texture(canvas: &mut Canvas<Window>, texture: &mut Texture, img: &Parall
         _ => { hue }
         };
 
-      let hsv = Hsv::new(the_hue * 180.0 + 180.0, 1.0, 1.0);
+      let hsv = Hsv::new(the_hue * 360.0, 1.0, 1.0);
       let rgb = Srgb::from_color(hsv);
 
       colors.push((rgb.red * 255.0) as u8);
@@ -476,13 +488,30 @@ pub fn main() -> Result<(), String> {
     iterations: 100000
   };
 
-  /*
   let config: Config = Config {
     center: [0.0, -0.765],
     density: 437.246963563,
     iterations: 100000
   };
+
+  let config: Config = Config {
+    center: [nice_center[1], nice_center[0]],
+    density: 437.246963563,
+    iterations: 100000
+  };
+  /*
   */
+
+  let reddit_center: Vector2::<f64> = [
+    -1.861187041179886906659585658336042502378764,
+    -0.002605973929293675455663017028705016331161
+  ];
+
+  let config: Config = Config {
+    center: [reddit_center[1], reddit_center[0]],
+    density: 1.4411518807585579e17,
+    iterations: 100000
+  };
 
   render_config(config)?;
 
