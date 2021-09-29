@@ -44,24 +44,28 @@ impl ParallelPixelBuffer {
     }
 
     pub fn put_pixel(&self, l: u32, t: u32, it: u32, re: f64) {
+      let base = ((t * self.width) + l) as usize;
         unsafe {
             let iterations = &mut *self.iterations.get();
-            let rests = &mut *self.rests.get();
-            let iter_map = &mut *self.iter_map.get();
-            let base = ((t * self.width) + l) as usize;
             *iterations.get_unchecked_mut(base) = it;
+            let rests = &mut *self.rests.get();
             *rests.get_unchecked_mut(base) = re;
-
-            if it < self.max_iterations {
-              let mut count = 0;
-              if iter_map.contains_key(&it) {
-                count = *iter_map.get(&it).unwrap();
-              }
-              count += 1;
-              //println!("count {}", count);
-              iter_map.insert(it, count);
-            }
         }
+    }
+
+    pub fn update_iter_map(&self, it: u32) {
+      if it < self.max_iterations {
+        unsafe {
+          let iter_map = &mut *self.iter_map.get();
+          let mut count = match iter_map.get(&it) {
+            Some(i) => *i,
+            None => 0,
+          };
+          count += 1;
+          //println!("count {}", count);
+          iter_map.insert(it, count);
+        }
+      }
     }
 
     pub fn get_iterations(&self) -> &Vec<u32> {
@@ -319,6 +323,7 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
     //pixels.put_pixel(x, y, (rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8);
 
     pixels.put_pixel(x, y, iteration, rest);
+    pixels.update_iter_map(iteration);
 
     //pixels.put_pixel(x, y, color[0], color[1], color[2]);
   });
