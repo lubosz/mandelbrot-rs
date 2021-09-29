@@ -254,23 +254,6 @@ fn interpolate_u8(color1: &Rgb<u8>, color2: &Rgb<u8>, factor: f64) -> Rgb<u8> {
 }
 
 fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32, h: u32) {
-
-  let bob_ross = vec![
-    Rgb::<u8>([0x00, 0x00, 0x00]), // Midnight black
-    Rgb::<u8>([0x02, 0x1e, 0x44]), // Prussian blue
-    Rgb::<u8>([0x0a, 0x34, 0x10]), // Sap green
-    Rgb::<u8>([0x0c, 0x00, 0x40]), // Phthalo blue
-    Rgb::<u8>([0x10, 0x2e, 0x3c]), // Phthalo green
-    Rgb::<u8>([0x22, 0x1b, 0x15]), // Van Dyke brown
-    Rgb::<u8>([0x4e, 0x15, 0x00]), // Alizarin crimson
-    Rgb::<u8>([0x5f, 0x2e, 0x1f]), // Dark Sienna
-    Rgb::<u8>([0xc7, 0x9b, 0x00]), // Yellow ochre
-    Rgb::<u8>([0xdb, 0x00, 0x00]), // Bright red
-    Rgb::<u8>([0xff, 0x3c, 0x00]), // Cadmium yellow
-    Rgb::<u8>([0xff, 0xb8, 0x00]), // Indian yellow
-    Rgb::<u8>([0xff, 0xff, 0xff]), // Titanium white
-  ];
-
   let mut coords: Vec<_> = iproduct!(0..w, 0..h).collect();
 
   let mut rng = thread_rng();
@@ -280,52 +263,9 @@ fn generate_image_parallel(config: &Config, pixels: &ParallelPixelBuffer, w: u32
 
   coords.par_iter().for_each(|&(x, y)| {
     let pos = image_to_world_position(&config, &origin, x, y);
-    /*
     let (iteration, rest) = iterate_naive_interpolate(config.iterations, pos);
-
-    let color1 = map_color(iteration, config.iterations);
-    let color2 = map_color(iteration + 1, config.iterations);
-
-    let color = interpolate(color1, color2, rest);
-    */
-
-    /*
-    let iteration = iterate_complex(config.iterations, pos);
-    let color = map_color(iteration, config.iterations);
-    */
-
-    //let iteration = iterate_complex(config.iterations, pos);
-    let (iteration, rest) = iterate_naive_interpolate(config.iterations, pos);
-
-    /*
-    */
-    let iteration_ratio = iteration as f64 / config.iterations as f64;
-
-    let iteration_ratio = iteration_ratio.powf(1.0/3.0);
-
-    //let hue = iteration as f64 % 360.0;
-    let hue = iteration_ratio * 360.0;
-    let foo = 1.0 - iteration_ratio;
-    let hsv = Hsv::new(hue, foo, foo);
-    let rgb = Srgb::from_color(hsv);
-
-    //let color = bob_ross.get((iteration%13) as usize).unwrap();
-
-    /*
-    let color1 = bob_ross.get((iteration%13) as usize).unwrap();
-    let color2 = bob_ross.get(((iteration+1)%13) as usize).unwrap();
-
-    let color = interpolate_u8(color1, color2, rest);
-    */
-
-    //pixels.put_pixel(x, y, (color[0] * 255.0) as u8, (color[1] * 255.0) as u8, (color[2] * 255.0) as u8);
-
-    //pixels.put_pixel(x, y, (rgb.red * 255.0) as u8, (rgb.green * 255.0) as u8, (rgb.blue * 255.0) as u8);
-
     pixels.put_pixel(x, y, iteration, rest);
     pixels.update_iter_map(iteration);
-
-    //pixels.put_pixel(x, y, color[0], color[1], color[2]);
   });
 
   let config2: Config = Config {
@@ -514,7 +454,8 @@ pub fn main() -> Result<(), String> {
 
   let config: Config = Config {
     center: [reddit_center[1], reddit_center[0]],
-    density: 1.4411518807585579e17,
+    //density: 1.4411518807585579e17,
+    density: 400.0,
     iterations: 100000
   };
 
