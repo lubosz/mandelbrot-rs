@@ -1,3 +1,9 @@
+/*
+ * mandelbrot-rs
+ * Copyright 2021 Lubosz Sarnecki <lubosz@gmail.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 #[macro_use] extern crate itertools;
 use num_complex::Complex;
 use sdl2::{Sdl, event::Event};
